@@ -1,15 +1,17 @@
-use graphix::Entity;
 use graphix::entity::Entity;
+use graphix::Entity;
 
 #[derive(Entity)]
+#[graphix(schema_name = "foobar")]
 struct User {
-    #[graphix(colname = "user_id")]
-    #[graphix(immutable)]
-    id: String
+    #[graphix(immutable, nullable, colname = "urmum")]
+    foo: String,
 }
 
 fn main() {
-    let e = User { id: String::from("foo") };
-
-    println!("Got user!\n\n{:?}", e.entity_data())
+    let u = User {
+        foo: String::from("bar"),
+    };
+    println!("descriptor for User: {:#?}", u.entity_descriptor());
+    println!("atlas: {:#?}", u.as_atlas_hcl());
 }

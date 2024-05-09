@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 graphix = { path = "../graphix" }
+hcl-rs = "0.16.9"
 strum = "0.26.2"
