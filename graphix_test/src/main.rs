@@ -6,11 +6,12 @@ use graphix::entity::Entity;
 #[derive(Entity)]
 #[graphix(table_name = "user", schema_name = "schema.private")]
 struct User {
-    #[graphix(colname = "user_id")]
+    #[graphix(colname = "user_id", unique)]
     pub id: String,
     pub name: String,
     pub username: String,
     pub verified: bool,
+    #[graphix(nullable)]
     pub created_at: u64,
 }
 

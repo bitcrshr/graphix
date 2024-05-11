@@ -141,8 +141,6 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         let args: Punctuated<MetaNameValue, Token![,]> =
             struct_attr.parse_args_with(Punctuated::parse_terminated)?;
 
-        println!("got args: {:?}\n", args);
-
         for arg in &args {
             match StructAttribute::from_meta(arg) {
                 Ok(att) => match att {
@@ -181,8 +179,6 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
                 continue;
             }
 
-            println!("found attribute: {:#?}\n\n", field_attr);
-
             let args: Punctuated<syn::Meta, Token![,]> =
                 field_attr.parse_args_with(Punctuated::parse_terminated)?;
 
@@ -213,11 +209,6 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         });
     }
 
-    println!(
-        "table_name: {:?}, schema_name: {:?}\n\nfied descriptors: {:?}\n\n",
-        table_name, schema_name, field_desc_tokens
-    );
-
     let output = quote! {
         impl graphix::entity::Entity for #name {
             fn entity_descriptor(&self) -> graphix::descriptor::EntityDescriptor {
@@ -232,8 +223,6 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
             }
         }
     };
-
-    println!("finna output this:\n\n{}", &output.to_string());
 
     Ok(output)
 }
