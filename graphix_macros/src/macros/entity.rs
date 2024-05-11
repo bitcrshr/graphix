@@ -209,7 +209,7 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
                 unique: #unique,
                 immutable: #immutable,
                 nullable: #nullable,
-            }
+            },
         });
     }
 
@@ -226,7 +226,7 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
                     table_name: #table_name.to_string(),
                     schema_name: #schema_name.to_string(),
                     fields: vec![
-                        #(#field_desc_tokens)*,
+                        #(#field_desc_tokens)*
                     ],
                 }
             }

@@ -83,6 +83,7 @@ dependencies = [
  "graphix",
  "hcl-rs",
  "strum",
+ "uuid",
 ]
 
 [[package]]

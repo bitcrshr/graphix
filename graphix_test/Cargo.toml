@@ -9,3 +9,4 @@ edition = "2021"
 graphix = { path = "../graphix" }
 hcl-rs = "0.16.9"
 strum = "0.26.2"
+uuid = { version = "1.8.0", features = ["v4"] }
