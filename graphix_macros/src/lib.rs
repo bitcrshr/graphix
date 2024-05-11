@@ -3,6 +3,7 @@ use std::env;
 use syn::DeriveInput;
 
 mod macros;
+mod sql;
 
 #[proc_macro_derive(Entity, attributes(graphix))]
 pub fn entity(input: proc_macro::TokenStream) -> proc_macro::TokenStream {

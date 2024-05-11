@@ -1,8 +1,10 @@
+use quote::{quote, ToTokens};
 use std::fmt::Formatter;
+use syn::spanned::Spanned;
+use syn::Type;
 
-#[derive(Debug)]
-pub enum PostgresColumnType {
-    Array(Box<PostgresColumnType>),
+pub enum ColumnType {
+    Array(Box<ColumnType>),
     Bit(Option<usize>),
     BitVarying(Option<usize>),
     Boolean,
@@ -60,7 +62,7 @@ pub enum PostgresColumnType {
     Uuid,
     Xml,
 }
-impl std::fmt::Display for PostgresColumnType {
+impl std::fmt::Display for ColumnType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Array(of) => write!(f, "{}[]", **of),
@@ -148,6 +150,62 @@ impl std::fmt::Display for PostgresColumnType {
         }
     }
 }
+impl TryFrom<&syn::Type> for ColumnType {
+    type Error = syn::Error;
+
+    fn try_from(value: &Type) -> Result<Self, Self::Error> {
+        let type_string = value.to_token_stream().to_string();
+
+        match value {
+            syn::Type::Path(tp) => {
+                let ident = tp.path.require_ident()?;
+
+                match ident.to_string().as_str() {
+                    "String" => Ok(Self::Text),
+                    "i8" => Ok(Self::SmallInt),
+                    "i16" => Ok(Self::SmallInt),
+                    "i32" => Ok(Self::Integer),
+                    "i64" => Ok(Self::BigInt),
+                    "isize" => Ok(Self::BigInt),
+                    "u8" => Ok(Self::SmallInt),
+                    "u16" => Ok(Self::SmallInt),
+                    "u32" => Ok(Self::Integer),
+                    "u64" => Ok(Self::BigInt),
+                    "usize" => Ok(Self::BigInt),
+                    "f32" => Ok(Self::Real),
+                    "f64" => Ok(Self::DoublePrecision),
+                    "bool" => Ok(Self::Boolean),
+                    "char" => Ok(Self::Char(Some(1))),
+                    // TODO: handle compound types
+                    // TODO: handle nonstd types
+                    _ => Err(syn::Error::new_spanned(
+                        ident,
+                        format!(
+                            "graphix is currently unable to handle type: {}",
+                            type_string,
+                        ),
+                    )),
+                }
+            }
+
+            _ => Err(syn::Error::new_spanned(value, "invalid type")),
+        }
+    }
+}
+impl ToTokens for ColumnType {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+      tokens.extend(match self {
+          Self::Text => quote! { graphix::dialect::PostgresColumnType::Text },
+            Self::SmallInt => quote! { graphix::dialect::PostgresColumnType::SmallInt },
+            Self::Integer => quote! { graphix::dialect::PostgresColumnType::Integer },
+            Self::BigInt => quote! { graphix::dialect::PostgresColumnType::BigInt },
+            Self::Real => quote! { graphix::dialect::PostgresColumnType::Real },
+            Self::DoublePrecision => quote! { graphix::dialect::PostgresColumnType::DoublePrecision },
+            Self::Boolean => quote! { graphix::dialect::PostgresColumnType::Boolean },
+           _ => syn::Error::new(tokens.span(), format!("graphix does not yet support the column type {}", self)).to_compile_error()
+       });
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -156,333 +214,303 @@ mod test {
     #[test]
     fn test_array() {
         assert_eq!(
-            PostgresColumnType::Array(Box::new(PostgresColumnType::Integer)).to_string(),
+            ColumnType::Array(Box::new(ColumnType::Integer)).to_string(),
             "integer[]"
         );
     }
 
     #[test]
     fn test_bit() {
-        assert_eq!(PostgresColumnType::Bit(None).to_string(), "bit");
-        assert_eq!(PostgresColumnType::Bit(Some(5)).to_string(), "bit(5)");
+        assert_eq!(ColumnType::Bit(None).to_string(), "bit");
+        assert_eq!(ColumnType::Bit(Some(5)).to_string(), "bit(5)");
     }
 
     #[test]
     fn test_bit_varying() {
+        assert_eq!(ColumnType::BitVarying(None).to_string(), "bit_varying");
         assert_eq!(
-            PostgresColumnType::BitVarying(None).to_string(),
-            "bit_varying"
-        );
-        assert_eq!(
-            PostgresColumnType::BitVarying(Some(5)).to_string(),
+            ColumnType::BitVarying(Some(5)).to_string(),
             "bit_varying(5)"
         );
     }
 
     #[test]
     fn test_boolean() {
-        assert_eq!(PostgresColumnType::Boolean.to_string(), "boolean");
+        assert_eq!(ColumnType::Boolean.to_string(), "boolean");
     }
 
     #[test]
     fn test_bytea() {
-        assert_eq!(PostgresColumnType::ByteA.to_string(), "bytea");
+        assert_eq!(ColumnType::ByteA.to_string(), "bytea");
     }
 
     #[test]
     fn test_date() {
-        assert_eq!(PostgresColumnType::Date.to_string(), "date");
+        assert_eq!(ColumnType::Date.to_string(), "date");
     }
 
     #[test]
     fn test_time() {
-        assert_eq!(PostgresColumnType::Time.to_string(), "time");
+        assert_eq!(ColumnType::Time.to_string(), "time");
     }
 
     #[test]
     fn test_time_tz() {
-        assert_eq!(PostgresColumnType::TimeTz.to_string(), "timetz");
+        assert_eq!(ColumnType::TimeTz.to_string(), "timetz");
     }
 
     #[test]
     fn test_timestamp() {
-        assert_eq!(PostgresColumnType::Timestamp(None).to_string(), "timestamp");
-        assert_eq!(
-            PostgresColumnType::Timestamp(Some(5)).to_string(),
-            "timestamp(5)"
-        );
+        assert_eq!(ColumnType::Timestamp(None).to_string(), "timestamp");
+        assert_eq!(ColumnType::Timestamp(Some(5)).to_string(), "timestamp(5)");
     }
 
     #[test]
     fn test_timestamp_tz() {
-        assert_eq!(PostgresColumnType::TimestampTz.to_string(), "timestamptz");
+        assert_eq!(ColumnType::TimestampTz.to_string(), "timestamptz");
     }
 
     #[test]
     fn test_interval() {
-        assert_eq!(PostgresColumnType::Interval.to_string(), "interval");
+        assert_eq!(ColumnType::Interval.to_string(), "interval");
     }
 
     #[test]
     fn test_domain() {
         assert_eq!(
-            PostgresColumnType::Domain("foo".to_string()).to_string(),
+            ColumnType::Domain("foo".to_string()).to_string(),
             "domain.foo"
         );
     }
 
     #[test]
     fn test_enum() {
-        assert_eq!(
-            PostgresColumnType::Enum("foo".to_string()).to_string(),
-            "enum.foo"
-        );
+        assert_eq!(ColumnType::Enum("foo".to_string()).to_string(), "enum.foo");
     }
 
     #[test]
     fn test_numeric() {
-        assert_eq!(PostgresColumnType::Numeric(None).to_string(), "numeric");
+        assert_eq!(ColumnType::Numeric(None).to_string(), "numeric");
         assert_eq!(
-            PostgresColumnType::Numeric(Some(vec![1, 2, 3])).to_string(),
+            ColumnType::Numeric(Some(vec![1, 2, 3])).to_string(),
             "numeric(1,2,3)"
         );
     }
 
     #[test]
     fn test_real() {
-        assert_eq!(PostgresColumnType::Real.to_string(), "real");
+        assert_eq!(ColumnType::Real.to_string(), "real");
     }
 
     #[test]
     fn test_double_precision() {
-        assert_eq!(
-            PostgresColumnType::DoublePrecision.to_string(),
-            "double_precision"
-        );
+        assert_eq!(ColumnType::DoublePrecision.to_string(), "double_precision");
     }
 
     #[test]
     fn test_float() {
-        assert_eq!(PostgresColumnType::Float(5).to_string(), "float(5)");
+        assert_eq!(ColumnType::Float(5).to_string(), "float(5)");
     }
 
     #[test]
     fn test_circle() {
-        assert_eq!(PostgresColumnType::Circle.to_string(), "circle");
+        assert_eq!(ColumnType::Circle.to_string(), "circle");
     }
 
     #[test]
     fn test_line() {
-        assert_eq!(PostgresColumnType::Line.to_string(), "line");
+        assert_eq!(ColumnType::Line.to_string(), "line");
     }
 
     #[test]
     fn test_lseg() {
-        assert_eq!(PostgresColumnType::LSeg.to_string(), "lseg");
+        assert_eq!(ColumnType::LSeg.to_string(), "lseg");
     }
 
     #[test]
     fn test_box() {
-        assert_eq!(PostgresColumnType::Box.to_string(), "box");
+        assert_eq!(ColumnType::Box.to_string(), "box");
     }
 
     #[test]
     fn test_path() {
-        assert_eq!(PostgresColumnType::Path.to_string(), "path");
+        assert_eq!(ColumnType::Path.to_string(), "path");
     }
 
     #[test]
     fn test_polygon() {
-        assert_eq!(PostgresColumnType::Polygon.to_string(), "polygon");
+        assert_eq!(ColumnType::Polygon.to_string(), "polygon");
     }
 
     #[test]
     fn test_point() {
-        assert_eq!(PostgresColumnType::Point.to_string(), "point");
+        assert_eq!(ColumnType::Point.to_string(), "point");
     }
 
     #[test]
     fn test_smallint() {
-        assert_eq!(PostgresColumnType::SmallInt.to_string(), "smallint");
+        assert_eq!(ColumnType::SmallInt.to_string(), "smallint");
     }
 
     #[test]
     fn test_integer() {
-        assert_eq!(PostgresColumnType::Integer.to_string(), "integer");
+        assert_eq!(ColumnType::Integer.to_string(), "integer");
     }
 
     #[test]
     fn test_int() {
-        assert_eq!(PostgresColumnType::Int.to_string(), "int");
+        assert_eq!(ColumnType::Int.to_string(), "int");
     }
 
     #[test]
     fn test_bigint() {
-        assert_eq!(PostgresColumnType::BigInt.to_string(), "bigint");
+        assert_eq!(ColumnType::BigInt.to_string(), "bigint");
     }
 
     #[test]
     fn test_json() {
-        assert_eq!(PostgresColumnType::Json.to_string(), "json");
+        assert_eq!(ColumnType::Json.to_string(), "json");
     }
 
     #[test]
     fn test_jsonb() {
-        assert_eq!(PostgresColumnType::Jsonb.to_string(), "jsonb");
+        assert_eq!(ColumnType::Jsonb.to_string(), "jsonb");
     }
 
     #[test]
     fn test_money() {
-        assert_eq!(PostgresColumnType::Money.to_string(), "money");
+        assert_eq!(ColumnType::Money.to_string(), "money");
     }
 
     #[test]
     fn test_inet() {
-        assert_eq!(PostgresColumnType::INet.to_string(), "inet");
+        assert_eq!(ColumnType::INet.to_string(), "inet");
     }
 
     #[test]
     fn test_cidr() {
-        assert_eq!(PostgresColumnType::Cidr.to_string(), "cidr");
+        assert_eq!(ColumnType::Cidr.to_string(), "cidr");
     }
 
     #[test]
     fn test_mac_addr() {
-        assert_eq!(PostgresColumnType::MacAddr.to_string(), "macaddr");
+        assert_eq!(ColumnType::MacAddr.to_string(), "macaddr");
     }
 
     #[test]
     fn test_mac_addr8() {
-        assert_eq!(PostgresColumnType::MacAddr8.to_string(), "macaddr8");
+        assert_eq!(ColumnType::MacAddr8.to_string(), "macaddr8");
     }
 
     #[test]
     fn test_int4_range() {
-        assert_eq!(PostgresColumnType::Int4Range.to_string(), "int4range");
+        assert_eq!(ColumnType::Int4Range.to_string(), "int4range");
     }
 
     #[test]
     fn test_int8_range() {
-        assert_eq!(PostgresColumnType::Int8Range.to_string(), "int8range");
+        assert_eq!(ColumnType::Int8Range.to_string(), "int8range");
     }
 
     #[test]
     fn test_num_range() {
-        assert_eq!(PostgresColumnType::NumRange.to_string(), "numrange");
+        assert_eq!(ColumnType::NumRange.to_string(), "numrange");
     }
 
     #[test]
     fn test_ts_range() {
-        assert_eq!(PostgresColumnType::TsRange.to_string(), "tsrange");
+        assert_eq!(ColumnType::TsRange.to_string(), "tsrange");
     }
 
     #[test]
     fn test_ts_tz_range() {
-        assert_eq!(PostgresColumnType::TsTzRange.to_string(), "tstzrange");
+        assert_eq!(ColumnType::TsTzRange.to_string(), "tstzrange");
     }
 
     #[test]
     fn test_date_range() {
-        assert_eq!(PostgresColumnType::DateRange.to_string(), "daterange");
+        assert_eq!(ColumnType::DateRange.to_string(), "daterange");
     }
 
     #[test]
     fn test_int4_multi_range() {
-        assert_eq!(
-            PostgresColumnType::Int4MultiRange.to_string(),
-            "int4multirange"
-        );
+        assert_eq!(ColumnType::Int4MultiRange.to_string(), "int4multirange");
     }
 
     #[test]
     fn test_int8_multi_range() {
-        assert_eq!(
-            PostgresColumnType::Int8MultiRange.to_string(),
-            "int8multirange"
-        );
+        assert_eq!(ColumnType::Int8MultiRange.to_string(), "int8multirange");
     }
 
     #[test]
     fn test_num_multi_range() {
-        assert_eq!(
-            PostgresColumnType::NumMultiRange.to_string(),
-            "nummultirange"
-        );
+        assert_eq!(ColumnType::NumMultiRange.to_string(), "nummultirange");
     }
 
     #[test]
     fn test_ts_multi_range() {
-        assert_eq!(PostgresColumnType::TsMultiRange.to_string(), "tsmultirange");
+        assert_eq!(ColumnType::TsMultiRange.to_string(), "tsmultirange");
     }
 
     #[test]
     fn test_ts_tz_multi_range() {
-        assert_eq!(
-            PostgresColumnType::TsTzMultiRange.to_string(),
-            "tstzmultirange"
-        );
+        assert_eq!(ColumnType::TsTzMultiRange.to_string(), "tstzmultirange");
     }
 
     #[test]
     fn test_date_multi_range() {
-        assert_eq!(
-            PostgresColumnType::DateMultiRange.to_string(),
-            "datemultirange"
-        );
+        assert_eq!(ColumnType::DateMultiRange.to_string(), "datemultirange");
     }
 
     #[test]
     fn test_small_serial() {
-        assert_eq!(PostgresColumnType::SmallSerial.to_string(), "smallserial");
+        assert_eq!(ColumnType::SmallSerial.to_string(), "smallserial");
     }
 
     #[test]
     fn test_serial() {
-        assert_eq!(PostgresColumnType::Serial.to_string(), "serial");
+        assert_eq!(ColumnType::Serial.to_string(), "serial");
     }
 
     #[test]
     fn test_big_serial() {
-        assert_eq!(PostgresColumnType::BigSerial.to_string(), "bigserial");
+        assert_eq!(ColumnType::BigSerial.to_string(), "bigserial");
     }
 
     #[test]
     fn test_varchar() {
-        assert_eq!(PostgresColumnType::VarChar(None).to_string(), "varchar");
-        assert_eq!(
-            PostgresColumnType::VarChar(Some(5)).to_string(),
-            "varchar(5)"
-        );
+        assert_eq!(ColumnType::VarChar(None).to_string(), "varchar");
+        assert_eq!(ColumnType::VarChar(Some(5)).to_string(), "varchar(5)");
     }
 
     #[test]
     fn test_char() {
-        assert_eq!(PostgresColumnType::Char(None).to_string(), "char");
-        assert_eq!(PostgresColumnType::Char(Some(5)).to_string(), "char(5)");
+        assert_eq!(ColumnType::Char(None).to_string(), "char");
+        assert_eq!(ColumnType::Char(Some(5)).to_string(), "char(5)");
     }
 
     #[test]
     fn test_text() {
-        assert_eq!(PostgresColumnType::Text.to_string(), "text");
+        assert_eq!(ColumnType::Text.to_string(), "text");
     }
 
     #[test]
     fn test_ts_vector() {
-        assert_eq!(PostgresColumnType::TsVector.to_string(), "tsvector");
+        assert_eq!(ColumnType::TsVector.to_string(), "tsvector");
     }
 
     #[test]
     fn test_ts_query() {
-        assert_eq!(PostgresColumnType::TsQuery.to_string(), "tsquery");
+        assert_eq!(ColumnType::TsQuery.to_string(), "tsquery");
     }
 
     #[test]
     fn test_uuid() {
-        assert_eq!(PostgresColumnType::Uuid.to_string(), "uuid");
+        assert_eq!(ColumnType::Uuid.to_string(), "uuid");
     }
 
     #[test]
     fn test_xml() {
-        assert_eq!(PostgresColumnType::Xml.to_string(), "xml");
+        assert_eq!(ColumnType::Xml.to_string(), "xml");
     }
 }

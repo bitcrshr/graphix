@@ -1,3 +1,5 @@
+use hcl::Block;
+
 mod attribute;
 pub mod field;
 mod field_type;
@@ -13,6 +15,12 @@ pub struct EntityDescriptor {
 pub trait Entity {
     fn entity_descriptor(&self) -> EntityDescriptor;
     fn as_atlas_hcl(&self) -> hcl::Block {
-        hcl::Block::builder("foo").build()
+        let desc = self.entity_descriptor();
+
+        let mut builder = Block::builder("table")
+            .add_label(desc.table_name)
+            .add_attribute(("schema", desc.schema_name));
+
+        builder.build()
     }
 }

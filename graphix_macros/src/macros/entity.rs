@@ -1,6 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{punctuated::Punctuated, DeriveInput, Expr, Lit, Meta, MetaNameValue, Token};
+use crate::sql::postgres::ColumnType;
 
 enum StructAttribute {
     TableName(String),
@@ -169,6 +170,7 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
             }
         };
         let typ = field.ty.to_token_stream().to_string();
+        let sql_typ = ColumnType::try_from(&field.ty)?;
         let mut immutable = false;
         let mut unique = false;
         let mut nullable = false;
@@ -202,6 +204,7 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
             graphix::entity::field::EntityFieldDescriptor {
                 name: #ident.to_string(),
                 typ: #typ.to_string(),
+                sql_type: #sql_typ,
                 column_name: #col_name.to_string(),
                 unique: #unique,
                 immutable: #immutable,
@@ -230,7 +233,8 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         }
     };
 
-    println!("finna output this: {}", &output.to_string());
+    println!("finna output this:\n\n{}", &output.to_string());
 
     Ok(output)
 }
+
