@@ -1,5 +1,2 @@
-pub use graphix_macros::Entity;
-
-pub mod entity;
-mod hcl;
-pub mod dialect;
+pub use graphix_macros::*;
+pub use graphix_models::*;

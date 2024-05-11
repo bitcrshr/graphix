@@ -46,6 +46,7 @@ name = "graphix"
 version = "0.1.0"
 dependencies = [
  "graphix_macros",
+ "graphix_models",
  "hcl-rs",
  "serde",
  "serde_json",
@@ -58,9 +59,20 @@ dependencies = [
 name = "graphix_macros"
 version = "0.1.0"
 dependencies = [
+ "graphix_models",
  "proc-macro2",
  "quote",
  "strum",
+ "syn",
+]
+
+[[package]]
+name = "graphix_models"
+version = "0.1.0"
+dependencies = [
+ "hcl-rs",
+ "proc-macro2",
+ "quote",
  "syn",
 ]
 
@@ -266,9 +278,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.61"
+version = "2.0.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c993ed8ccba56ae856363b1845da7266a7cb78e1d146c8a32d54b45a8b831fc9"
+checksum = "9f660c3bfcefb88c538776b6685a0c472e3128b51e74d48793dc2a488196e8eb"
 dependencies = [
  "proc-macro2",
  "quote",

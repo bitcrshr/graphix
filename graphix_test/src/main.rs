@@ -1,5 +1,5 @@
-use graphix::entity::Entity;
 use graphix::Entity;
+use graphix::entity::Entity;
 
 #[derive(Entity)]
 #[graphix(schema_name = "foobar", table_name = "urmum")]

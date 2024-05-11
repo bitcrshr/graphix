@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{punctuated::Punctuated, DeriveInput, Expr, Lit, Meta, MetaNameValue, Token};
-use crate::sql::postgres::ColumnType;
+use graphix_models::sql::postgres::ColumnType;
 
 enum StructAttribute {
     TableName(String),
@@ -201,7 +201,7 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
         }
 
         field_desc_tokens.push(quote! {
-            graphix::entity::field::EntityFieldDescriptor {
+            graphix::descriptor::EntityFieldDescriptor {
                 name: #ident.to_string(),
                 typ: #typ.to_string(),
                 sql_type: #sql_typ,
@@ -220,8 +220,8 @@ pub fn entity_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
 
     let output = quote! {
         impl graphix::entity::Entity for #name {
-            fn entity_descriptor(&self) -> graphix::entity::EntityDescriptor {
-                graphix::entity::EntityDescriptor {
+            fn entity_descriptor(&self) -> graphix::descriptor::EntityDescriptor {
+                graphix::descriptor::EntityDescriptor {
                     name: #struct_name.to_string(),
                     table_name: #table_name.to_string(),
                     schema_name: #schema_name.to_string(),
