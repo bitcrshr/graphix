@@ -7,4 +7,10 @@ edition = "2021"
 
 [dependencies]
 graphix_macros = { path = "../graphix_macros" }
+graphix_models = { path = "../graphix_models" }
+hcl-rs = { version = "0.16.9", features = ["perf"] }
+serde = "1.0.201"
+serde_json = "1.0.117"
 strum = { version = "0.26.2", features = ["derive"] }
+time = { version = "0.3.36", features = ["serde", "serde-human-readable", "serde-well-known"] }
+uuid = { version = "1.8.0", features = ["serde", "v4"] }

@@ -3,14 +3,14 @@ name = "graphix_macros"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
 proc-macro = true
+name = "graphix_macros"
 
 [dependencies]
-darling = "0.20.8"
-proc-macro2 = "1.0.81"
+graphix_models = { path = "../graphix_models" }
+proc-macro2 = "1.0.82"
 quote = "1.0.36"
 strum = { version = "0.26.2", features = ["derive"] }
-syn = { version = "2.0.60", features = ["full", "extra-traits"] }
+syn = { version = "2.0.61", features = ["full", "printing"] }
+

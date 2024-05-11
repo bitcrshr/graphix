@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "graphix", "graphix_macros", "graphix_test",
+    "graphix", "graphix_macros", "graphix_models", "graphix_test",
 ]
 resolver = "2"

@@ -6,6 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/graphix_macros/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/graphix_test/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/graphix_models/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/graphix/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

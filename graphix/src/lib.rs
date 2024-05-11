@@ -1,3 +1,2 @@
-pub use graphix_macros::Entity;
-
-pub mod entity;
+pub use graphix_macros::*;
+pub use graphix_models::*;
